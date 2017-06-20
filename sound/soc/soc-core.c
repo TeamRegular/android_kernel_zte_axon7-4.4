@@ -648,9 +648,12 @@ int snd_soc_suspend(struct device *dev)
 					  SND_SOC_DAPM_STREAM_SUSPEND);
 	}
 
+// chenjun:NO need suspend
+#if 0
 	/* Recheck all endpoints too, their state is affected by suspend */
 	dapm_mark_endpoints_dirty(card);
 	snd_soc_dapm_sync(&card->dapm);
+#endif
 
 	/* suspend all CODECs */
 	list_for_each_entry(codec, &card->codec_dev_list, card_list) {
@@ -795,9 +798,12 @@ static void soc_resume_deferred(struct work_struct *work)
 
 	dev_dbg(card->dev, "ASoC: resume work completed\n");
 
+// chenjun:NO need suspend
+#if 0
 	/* Recheck all endpoints too, their state is affected by suspend */
 	dapm_mark_endpoints_dirty(card);
 	snd_soc_dapm_sync(&card->dapm);
+#endif
 
 	/* userspace can access us now we are back as we were before */
 	snd_power_change_state(card->snd_card, SNDRV_CTL_POWER_D0);
