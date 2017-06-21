@@ -12,6 +12,7 @@ menuconfig INPUT_TOUCHSCREEN
 if INPUT_TOUCHSCREEN
 
 source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
+source "drivers/input/touchscreen/synaptics_dsx_zte/Kconfig"
 
 config OF_TOUCHSCREEN
 	def_tristate INPUT
@@ -1224,5 +1225,12 @@ config TOUCHSCREEN_ST
 	  If unsure, say N.
 
 source "drivers/input/touchscreen/st/Kconfig"
+
+config FORCE_TOUCH_NDT
+       tristate "Force Touch by NDT"
+       depends on I2C && INPUT && TOUCHSCREEN_SYNAPTICS_DSX_ZTE
+       default y
+       help
+         This driver provides support for Force Touch by NDT.
 
 endif
