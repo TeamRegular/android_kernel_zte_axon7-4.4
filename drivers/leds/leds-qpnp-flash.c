@@ -743,6 +743,41 @@ static ssize_t qpnp_led_strobe_type_store(struct device *dev,
 	return count;
 }
 
+static ssize_t qpnp_led_duration_set(struct device *dev,
+			struct device_attribute *attr,
+			const char *buf, size_t count)
+{
+	struct flash_node_data *flash_node;
+	unsigned long state;
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+	ssize_t ret = -EINVAL;
+
+	ret = kstrtoul(buf, 10, &state);
+	if (ret)
+		return ret;
+
+	flash_node = container_of(led_cdev, struct flash_node_data, cdev);
+
+
+	flash_node->duration = state;
+
+
+	return count;
+}
+
+static ssize_t qpnp_led_duration_show(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
+{
+	struct flash_node_data *flash_node;
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+
+	flash_node = container_of(led_cdev, struct flash_node_data, cdev);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", flash_node->duration);
+}
+
+
 static ssize_t qpnp_flash_led_dump_regs_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -831,6 +866,8 @@ static ssize_t qpnp_flash_led_max_current_show(struct device *dev,
 
 static struct device_attribute qpnp_flash_led_attrs[] = {
 	__ATTR(strobe, 0664, NULL, qpnp_led_strobe_type_store),
+	__ATTR(duration, 0644, qpnp_led_duration_show,
+		qpnp_led_duration_set),
 	__ATTR(reg_dump, 0664, qpnp_flash_led_dump_regs_show, NULL),
 	__ATTR(enable_current_derate, 0664, NULL,
 		qpnp_flash_led_current_derate_store),
@@ -1845,8 +1882,16 @@ static void qpnp_flash_led_brightness_set(struct led_classdev *led_cdev,
 			value = FLASH_LED_MIN_CURRENT_MA;
 		flash_node->prgm_current = value;
 	}
-
+/*
+  * by ZTE_YCM_20151102 yi.changming 400091-3
+  */
+// --->
+#if 0
 	queue_work(led->ordered_workq, &flash_node->work);
+#else
+	qpnp_flash_led_work(&flash_node->work);
+#endif
+// <---400091-3
 }
 
 static int qpnp_flash_led_init_settings(struct qpnp_flash_led *led)
