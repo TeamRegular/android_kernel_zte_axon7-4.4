@@ -40,6 +40,7 @@
 #include "diag_mux.h"
 #include "diag_ipc_logging.h"
 
+void msm_ignore_sd_dump(int enable);
 #define STM_CMD_VERSION_OFFSET	4
 #define STM_CMD_MASK_OFFSET	5
 #define STM_CMD_DATA_OFFSET	6
@@ -1024,6 +1025,7 @@ int diag_process_apps_pkt(unsigned char *buf, int len,
 		msleep(5000);
 		/* call download API */
 		msm_set_restart_mode(RESTART_DLOAD);
+		msm_ignore_sd_dump(1); //ensure that do not enter into sd dump
 		printk(KERN_CRIT "diag: download mode set, Rebooting SoC..\n");
 		kernel_restart(NULL);
 		/* Not required, represents that command isnt sent to modem */
@@ -1623,7 +1625,7 @@ int diagfwd_init(void)
 	for (i = 0; i < DIAG_NUM_PROC; i++)
 		driver->real_time_mode[i] = 1;
 	driver->supports_separate_cmdrsp = 1;
-	driver->supports_apps_hdlc_encoding = 1;
+	driver->supports_apps_hdlc_encoding = 0;
 	driver->supports_apps_header_untagging = 1;
 	driver->supports_pd_buffering = 1;
 	for (i = 0; i < NUM_PERIPHERALS; i++)
