@@ -422,15 +422,6 @@ int ak49xx_request_irq(struct ak49xx_core_resource *ak49xx_res,
 	virq = phyirq_to_virq(ak49xx_res, irq);
 
 	pr_debug("%s: virq = %d\n", __func__, virq);
-	/*
-	 * ARM needs us to explicitly flag the IRQ as valid
-	 * and will set them noprobe when we do so.
-	 */
-#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
-	set_irq_flags(virq, IRQF_VALID);
-#else
-	set_irq_noprobe(virq);
-#endif
 
 	return request_threaded_irq(virq, NULL, handler, IRQF_TRIGGER_RISING,
 			name, data);
@@ -481,17 +472,18 @@ static int ak49xx_map_irq(
 	return phyirq_to_virq(ak49xx_res, irq);
 }
 #else
-int __init ak49xx_irq_of_init(struct device_node *node,
+static struct ak49xx_irq_drv_data *
+ak49xx_irq_add_domain(struct device_node *node,
 		struct device_node *parent)
 {
-	struct ak49xx_irq_drv_data *data;
+	struct ak49xx_irq_drv_data *data = NULL;
 
 	pr_debug("%s: node %s, node parent %s\n", __func__,
 		 node->name, node->parent->name);
 
 	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (!data)
-		return -ENOMEM;
+		return NULL;
 
 	/*
 	 * ak49xx_intc interrupt controller supports N to N irq mapping with
@@ -503,10 +495,10 @@ int __init ak49xx_irq_of_init(struct device_node *node,
 					     &irq_domain_simple_ops, data);
 	if (!data->domain) {
 		kfree(data);
-		return -ENOMEM;
+		return NULL;
 	}
 
-	return 0;
+	return data;
 }
 
 static struct ak49xx_irq_drv_data *
@@ -642,7 +634,6 @@ static int ak49xx_irq_probe(struct platform_device *pdev)
 static int ak49xx_irq_probe(struct platform_device *pdev)
 {
 	int irq;
-	struct irq_domain *domain;
 	struct ak49xx_irq_drv_data *data;
 	struct device_node *node = pdev->dev.of_node;
 	int ret = -EINVAL;
@@ -660,12 +651,11 @@ static int ak49xx_irq_probe(struct platform_device *pdev)
 			return irq;
 		}
 		dev_err(&pdev->dev, "%s: virq = %d\n", __func__, irq);
-		domain = irq_find_host(pdev->dev.of_node);
-		if (unlikely(!domain)) {
-			pr_err("%s: domain is NULL", __func__);
+		data = ak49xx_irq_add_domain(node, node->parent);
+		if (!data) {
+			pr_err("%s: irq_add_domain failed\n", __func__);
 			return -EINVAL;
 		}
-		data = (struct ak49xx_irq_drv_data *)domain->host_data;
 		data->irq = irq;
 #if 0
         data->es804_rst_gpio= of_get_named_gpio(pdev->dev.of_node,
@@ -739,6 +729,8 @@ static int ak49xx_irq_remove(struct platform_device *pdev)
 	data = (struct ak49xx_irq_drv_data *)domain->host_data;
 	data->irq = 0;
 	wmb();
+	irq_domain_remove(data->domain);
+	kfree(data);
 
 	return 0;
 }

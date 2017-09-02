@@ -122,16 +122,9 @@ int ak49xx_power_test(struct ak49xx *ak49xx,int val);
 int ak49xx_cram_read(unsigned short reg, int bytes, void *dest);
 #endif
 
-#if defined(CONFIG_AK4960_CODEC) || \
-	defined(CONFIG_AK4961_CODEC) || \
-	defined(CONFIG_AK4962_CODEC)
-int __init ak49xx_irq_of_init(struct device_node *node,
-			       struct device_node *parent);
-#else
 static inline int __init ak49xx_irq_of_init(struct device_node *node,
 			       struct device_node *parent)
 {
 	return 0;
 }
-#endif	/* CONFIG_OF */
 #endif
